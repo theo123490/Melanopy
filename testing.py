@@ -3,8 +3,9 @@ import numpy as np
 import math
 from matplotlib import pyplot as plt
 from skimage.feature import greycomatrix, greycoprops
-from hist_3d import hist_3d
-from scipy.misc import imresize
+import melanopy as mpy
+
+
 
 #CHOOSE IMAGE
 
@@ -22,11 +23,9 @@ shortening = 5
 img = img[shortening:imy-shortening,shortening:imx-shortening,:]
 imy,imx,imz = np.shape(img)
 gs = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-hsv=cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
 
-
-ret1,th1 = cv2.threshold(gs,25,255,cv2.THRESH_BINARY)
+_,th1 = cv2.threshold(gs,25,255,cv2.THRESH_BINARY)
 
 ckernel=cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(8,8))
 closing = cv2.morphologyEx(th1, cv2.MORPH_CLOSE, ckernel,iterations = 4)
@@ -47,7 +46,7 @@ derm_scope = erosion
 
 
 
-ret,th = cv2.threshold(gs,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+_,th = cv2.threshold(gs,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
 
 #REMOVING HAIR MORPH TRANSFORM------------- START
 #Morphologic Transform ------------- START
@@ -64,7 +63,7 @@ segment_mask = dilation
 
 nmask =  cv2.bitwise_and(derm_scope, segment_mask)
 
-im2,contours,hierarchy = cv2.findContours(nmask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+contours,hierarchy = cv2.findContours(nmask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 
 contimg = img.copy()
 
@@ -158,14 +157,14 @@ if len(contours) != 0:
     overlap_y_1 = roi_top - roi_bot_flip
     overlap_y_2= roi_bot_flip - roi_top
     overlap_y =  cv2.bitwise_and(overlap_y_1, overlap_y_2)
-    ret,overlap_y = cv2.threshold(overlap_y,0,255,cv2.THRESH_BINARY)
+    _,overlap_y = cv2.threshold(overlap_y,0,255,cv2.THRESH_BINARY)
 
     overlap_x = roi_left - roi_right_flip 
 
     overlap_x_1 = roi_left - roi_right_flip
     overlap_x_2= roi_right_flip - roi_left
     overlap_x =  cv2.bitwise_and(overlap_x_1, overlap_x_2)
-    ret,overlap_x = cv2.threshold(overlap_x,0,255,cv2.THRESH_BINARY)
+    _,overlap_x = cv2.threshold(overlap_x,0,255,cv2.THRESH_BINARY)
     
     sum_overlap_x = sum(sum(np.int64(overlap_x)))/255
     sum_overlap_y = sum(sum(np.int64(overlap_y)))/255
@@ -251,7 +250,7 @@ if len(contours) != 0:
     GLCM_segment = cv2.bitwise_and(glcm_rotated, glcm_rotated, mask=glcm_mask_rotated)
     glcm_gs = cv2.cvtColor(GLCM_segment,cv2.COLOR_BGR2GRAY)
 
-    _,glcm_contours,_ = cv2.findContours(glcm_mask_rotated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    glcm_contours,_ = cv2.findContours(glcm_mask_rotated, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     glcm_c =max(glcm_contours, key = cv2.contourArea)
 
     x,y,w,h = cv2.boundingRect(glcm_c)
@@ -263,8 +262,6 @@ if len(contours) != 0:
     glcm_mat = glcm_mat.astype('uint8')
     glcm_mat_norm = glcm_mat/np.sum(glcm_mat)
     
-    
-    GLCM_resize = imresize(glcm_mat, (85,85))
 
     
     R_col_roi1 = GLCM_segment[ y:y+h, x:x+w ,0]
@@ -361,7 +358,7 @@ if len(contours) != 0:
     
     points = col_segment_point
     
-    hist,binedges = hist_3d(col_segment_point,8)
+    hist,binedges = mpy.hist_3d(col_segment_point,8)
     
     bg_px = np.sum(inv_flood_img)/255
     hist[0,0,0]=hist[0,0,0] - bg_px
@@ -382,6 +379,7 @@ rwidth = 800
 #Show Image List
 show_imagename = ['img',
                   'th',
+                  'th1',
                   'nmask',
                   'flood img',
                   'blank image',
@@ -399,6 +397,7 @@ show_imagename = ['img',
                   ]
 show_image = [img,
               th,
+              th1,
               nmask,
               flood_img,
               bimg,
